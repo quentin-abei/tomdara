@@ -10,10 +10,14 @@ contract NFTMarket is ERC721URIStorage{
     using SafeMath for uint;
     Counters.Counter private _tokenIds;
 
+    address public wallet = 0xbBD2a13E46A97Ee391c344e8F81dE4a1201a97DC;
+
     struct NftListing {
         uint price;
         address seller;
     }
+
+    event NftTransfer(uint tokenId, address to, string tokenURI, uint price);
 
     mapping (uint => NftListing) private listings;
 
@@ -31,6 +35,7 @@ contract NFTMarket is ERC721URIStorage{
         uint newIds = _tokenIds.current();
         _safeMint(msg.sender, newIds);
         _setTokenURI(newIds, tokenURI);
+        emit NftTransfer(newIds, msg.sender, tokenURI, 0);
     }
 
    /**
@@ -45,6 +50,8 @@ contract NFTMarket is ERC721URIStorage{
         approve(address(this), tokenId);
         transferFrom(msg.sender, address(this), tokenId);
         listings[tokenId] = NftListing(price, msg.sender);
+        emit NftTransfer(tokenId, address(this), "", price);
+
    }
 
    /**
@@ -61,6 +68,10 @@ contract NFTMarket is ERC721URIStorage{
       // send 95% of funds to the seller, market fee 5%
       (bool sent, ) = payable(listing.seller).call{value: listing.price.mul(95).div(100)}("");
       require(sent, "failed to send ether");
+      (bool sendFee, ) = payable(wallet).call{value: listing.price.mul(5).div(100)}("");
+      require(sendFee, "failed to send fee");
+      emit NftTransfer(tokenId, msg.sender, "", 0);
+
    }
 
    function cancelListing(uint tokenId) public {
@@ -70,6 +81,8 @@ contract NFTMarket is ERC721URIStorage{
         approve(msg.sender, tokenId);
         transferFrom(address(this), msg.sender, tokenId);
         clearListing(tokenId);
+        emit NftTransfer(tokenId, msg.sender, "", 0);
+
    }
 
    function clearListing(uint tokenId) internal view {
@@ -78,5 +91,20 @@ contract NFTMarket is ERC721URIStorage{
     listing.seller = address(0);
    }
 
+   function transferOwnership(address newWallet) public view OnlyMarket {
+        require(newWallet != address(0));
+        _transferOwnership(newWallet);
+   }
+
+   function _transferOwnership(address newWallet) internal view {
+    address oldWallet = wallet;
+    oldWallet = newWallet;
+   }
+
+   modifier OnlyMarket() {
+    require(wallet == msg.sender);
+    _;
+   }
+   
    
 }
