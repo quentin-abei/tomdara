@@ -10,24 +10,54 @@ describe("NFTMarket",() => {
     const [owner, random] = await ethers.getSigners();
     const NFTMARKET = await ethers.getContractFactory("NFTMarket");
     const Nftmarket = await NFTMARKET.deploy();
+    const tokenURI = 'https://something';
+     const create = await Nftmarket.createNFT(tokenURI);
 
-    return {Nftmarket, owner, random};
-   }
+    return {Nftmarket, owner, random, create, tokenURI};
+   };
+   describe("Deployment", ()=> {
+    it("Should create an NFT",async () => {
+     const {Nftmarket, owner, create, tokenURI} = await loadFixture(deployNFTMarketFixture);
+     
+     const receipt = await create.wait();
+     const tokenId = receipt.events[0].args.tokenId;
+     expect(await Nftmarket.tokenURI(tokenId)).to.equal(tokenURI);
+     const ownerAdd = await owner.getAddress();
+     expect(await Nftmarket.ownerOf(tokenId)).to.equal( ownerAdd);
+     
+    })
+  })
 
-   describe("Deployement", ()=> {
-     it("Should create an NFT",async () => {
-      const {Nftmarket, owner} = await loadFixture(deployNFTMarketFixture);
-      const tokenURI = 'https://something';
-      const create = await Nftmarket.createNFT(tokenURI);
+  describe("listNft", () => {
+    it("Should revert if price is zero",async () => {
+      const {Nftmarket,  create} = await loadFixture(deployNFTMarketFixture);
       const receipt = await create.wait();
-      const tokenId = receipt.events[0].args.tokenId;
-      expect(await Nftmarket.tokenURI(tokenId)).to.equal(tokenURI);
-      const ownerAdd = await owner.getAddress();
-      expect(await Nftmarket.ownerOf(tokenId)).to.equal( ownerAdd);
+     const tokenId = receipt.events[0].args.tokenId;
+      expect( Nftmarket.listNFT(tokenId, 0)).to.be.revertedWith("price must be greater than zero");
+    });
+    it("should list an NFT and emit an event if price > zero",async () => {
+      const {Nftmarket,  create} = await loadFixture(deployNFTMarketFixture);
+      const receipt = await create.wait();
+     const tokenId = receipt.events[0].args.tokenId;
+     const add = await Nftmarket.address;
+      expect( Nftmarket.listNFT(tokenId, 1)).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, add, "", 1);
+    });
+    it('Should revert if lister is not the owner',async () => {
+      const {Nftmarket,  create, random} = await loadFixture(deployNFTMarketFixture);
+      const receipt = await create.wait();
+     const tokenId = receipt.events[0].args.tokenId;
+     expect(Nftmarket.connect(random).listNFT(tokenId, 12)).to.be.revertedWith("ERC721: approve caller is not token owner or approved for all");
+    })
+  })
+
+  describe("buyNft", ()=> {
+    it("Should revert if price < 0 ",async () => {
       
-     })
-   })
+    })
+  })
 })
+
+
 // describe("Lock", function () {
 //   // We define a fixture to reuse the same setup in every test.
 //   // We use loadFixture to run this setup once, snapshot that state,

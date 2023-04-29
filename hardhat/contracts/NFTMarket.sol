@@ -21,7 +21,7 @@ contract NFTMarket is ERC721URIStorage{
 
     mapping (uint => NftListing) private listings;
 
-    error PriceMustBeGreaterThanZero();
+   
     error NotEnoughFunds();
 
     constructor() ERC721("RAMEN", "RMN"){}
@@ -44,9 +44,7 @@ contract NFTMarket is ERC721URIStorage{
     * @param price , the price of nft
     */
    function listNFT(uint tokenId, uint price) public {
-        if (price <=0) {
-            revert PriceMustBeGreaterThanZero();
-        }
+        require(price > 0, "price must be greater than zero");
         approve(address(this), tokenId);
         transferFrom(msg.sender, address(this), tokenId);
         listings[tokenId] = NftListing(price, msg.sender);
@@ -68,8 +66,7 @@ contract NFTMarket is ERC721URIStorage{
       // send 95% of funds to the seller, market fee 5%
       (bool sent, ) = payable(listing.seller).call{value: listing.price.mul(95).div(100)}("");
       require(sent, "failed to send ether");
-      (bool sendFee, ) = payable(wallet).call{value: listing.price.mul(5).div(100)}("");
-      require(sendFee, "failed to send fee");
+      clearListing(tokenId);
       emit NftTransfer(tokenId, msg.sender, "", 0);
 
    }
@@ -89,6 +86,12 @@ contract NFTMarket is ERC721URIStorage{
     NftListing memory listing = listings[tokenId];
     listing.price = 0;
     listing.seller = address(0);
+   }
+
+   function withdrawFee() public OnlyMarket {
+    uint balance = address(this).balance;
+    (bool sendFee, ) = payable(wallet).call{value: balance}("");
+    require(sendFee, "failed to send fee");
    }
 
    function transferOwnership(address newWallet) public view OnlyMarket {
