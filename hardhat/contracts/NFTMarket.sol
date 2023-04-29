@@ -62,4 +62,21 @@ contract NFTMarket is ERC721URIStorage{
       (bool sent, ) = payable(listing.seller).call{value: listing.price.mul(95).div(100)}("");
       require(sent, "failed to send ether");
    }
+
+   function cancelListing(uint tokenId) public {
+        NftListing memory listing = listings[tokenId];
+        require(listing.price > 0, "This nft is not for sale");
+        require(listing.seller == msg.sender, "You are not the owner");
+        approve(msg.sender, tokenId);
+        transferFrom(address(this), msg.sender, tokenId);
+        clearListing(tokenId);
+   }
+
+   function clearListing(uint tokenId) internal view {
+    NftListing memory listing = listings[tokenId];
+    listing.price = 0;
+    listing.seller = address(0);
+   }
+
+   
 }
