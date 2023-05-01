@@ -95,7 +95,7 @@ contract NFTMarket is ERC721URIStorage{
 
    function transferOwnership(address newWallet) public view OnlyMarket {
         require(newWallet != address(0));
-        _transferOwnership(newWallet);
+        _transferOwnership(newWallet); 
    }
 
    function _transferOwnership(address newWallet) internal view {
