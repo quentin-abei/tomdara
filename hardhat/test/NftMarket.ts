@@ -36,10 +36,10 @@ describe("NFTMarket",() => {
       expect( Nftmarket.listNFT(tokenId, 0)).to.be.revertedWith("price must be greater than zero");
     });
     it("should list an NFT and emit an event if price > zero",async () => {
-      const {Nftmarket,  create} = await loadFixture(deployNFTMarketFixture);
+      const {Nftmarket,  create, owner} = await loadFixture(deployNFTMarketFixture);
       const receipt = await create.wait();
      const tokenId = receipt.events[0].args.tokenId;
-     const add = await Nftmarket.address;
+     const add = owner.getAddress();
       expect( Nftmarket.listNFT(tokenId, 1)).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, add, "", 1);
     });
     it('Should revert if lister is not the owner',async () => {
@@ -51,9 +51,35 @@ describe("NFTMarket",() => {
   })
 
   describe("buyNft", ()=> {
-    it("Should revert if price < 0 ",async () => {
-      
-    })
+    it("should list an NFT, cancel listing and revert on buy",async () => {
+      const {Nftmarket,  create, owner} = await loadFixture(deployNFTMarketFixture);
+      const receipt = await create.wait();
+     const tokenId = receipt.events[0].args.tokenId;
+     const add =  owner.getAddress();
+      expect( Nftmarket.listNFT(tokenId, 1)).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, add, "", 1);
+     const cancelListing =  Nftmarket.cancelListing(tokenId);
+     expect(cancelListing).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, add, "", 0);
+     const buyWillRevert = Nftmarket.buyNFT(tokenId);
+     expect(buyWillRevert).to.be.revertedWith("This nft is not for sale");
+    });
+    it("should list an NFT, and revert on buy if user does not send enough ether",async () => {
+      const {Nftmarket,  create, owner} = await loadFixture(deployNFTMarketFixture);
+      const receipt = await create.wait();
+     const tokenId = receipt.events[0].args.tokenId;
+     const add =  owner.getAddress();
+     const listNft =  Nftmarket.listNFT(tokenId, 2)
+     const buyWillRevert = Nftmarket.buyNFT(tokenId, {value: ethers.utils.parseEther("1")});
+     expect(buyWillRevert).to.be.revertedWithCustomError(Nftmarket, "NotEnoughFunds");
+    });
+    it("should list an NFT, and exceute buy function",async () => {
+      const {Nftmarket,  create, owner} = await loadFixture(deployNFTMarketFixture);
+      const receipt = await create.wait();
+     const tokenId = receipt.events[0].args.tokenId;
+     const add =  owner.getAddress();
+     const listNft =  Nftmarket.listNFT(tokenId, 2)
+     const buyWillSucceed = Nftmarket.buyNFT(tokenId, {value: ethers.utils.parseEther("2")});
+     expect(buyWillSucceed).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, owner.address, "", 0);
+    });
   })
 })
 

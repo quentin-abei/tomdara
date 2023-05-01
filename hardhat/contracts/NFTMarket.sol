@@ -66,7 +66,6 @@ contract NFTMarket is ERC721URIStorage{
       // send 95% of funds to the seller, market fee 5%
       (bool sent, ) = payable(listing.seller).call{value: listing.price.mul(95).div(100)}("");
       require(sent, "failed to send ether");
-      clearListing(tokenId);
       emit NftTransfer(tokenId, msg.sender, "", 0);
 
    }
