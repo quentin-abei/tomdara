@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract NFTMarket is ERC721URIStorage{
+     // 0xb6F76AAacD4c8DCC89f4dbcA8F117c0Fc5935e60
     using Counters for Counters.Counter;
     using SafeMath for uint;
     Counters.Counter private _tokenIds;
@@ -17,7 +18,7 @@ contract NFTMarket is ERC721URIStorage{
         address seller;
     }
 
-    event NftTransfer(uint tokenId, address to, string tokenURI, uint price);
+    event NftTransfer(uint tokenId,address from, address to, string tokenURI, uint price);
 
     mapping (uint => NftListing) private listings;
 
@@ -35,7 +36,7 @@ contract NFTMarket is ERC721URIStorage{
         uint newIds = _tokenIds.current();
         _safeMint(msg.sender, newIds);
         _setTokenURI(newIds, tokenURI);
-        emit NftTransfer(newIds, msg.sender, tokenURI, 0);
+        emit NftTransfer(newIds, address(0), msg.sender, tokenURI, 0);
     }
 
    /**
@@ -48,7 +49,7 @@ contract NFTMarket is ERC721URIStorage{
         approve(address(this), tokenId);
         transferFrom(msg.sender, address(this), tokenId);
         listings[tokenId] = NftListing(price, msg.sender);
-        emit NftTransfer(tokenId, address(this), "", price);
+        emit NftTransfer(tokenId,msg.sender, address(this), "", price);
 
    }
 
@@ -66,7 +67,8 @@ contract NFTMarket is ERC721URIStorage{
       // send 95% of funds to the seller, market fee 5%
       (bool sent, ) = payable(listing.seller).call{value: listing.price.mul(95).div(100)}("");
       require(sent, "failed to send ether");
-      emit NftTransfer(tokenId, msg.sender, "", 0);
+      clearListing(tokenId);
+      emit NftTransfer(tokenId,address(this), msg.sender, "", 0);
 
    }
 
@@ -77,7 +79,7 @@ contract NFTMarket is ERC721URIStorage{
         approve(msg.sender, tokenId);
         transferFrom(address(this), msg.sender, tokenId);
         clearListing(tokenId);
-        emit NftTransfer(tokenId, msg.sender, "", 0);
+        emit NftTransfer(tokenId,address(this), msg.sender, "", 0);
 
    }
 

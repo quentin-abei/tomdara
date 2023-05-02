@@ -40,7 +40,7 @@ describe("NFTMarket",() => {
       const receipt = await create.wait();
      const tokenId = receipt.events[0].args.tokenId;
      const add = owner.getAddress();
-      expect( Nftmarket.listNFT(tokenId, 1)).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, add, "", 1);
+      expect( Nftmarket.listNFT(tokenId, 1)).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, add, Nftmarket.address, "", 1);
     });
     it('Should revert if lister is not the owner',async () => {
       const {Nftmarket,  create, random} = await loadFixture(deployNFTMarketFixture);
@@ -56,9 +56,9 @@ describe("NFTMarket",() => {
       const receipt = await create.wait();
      const tokenId = receipt.events[0].args.tokenId;
      const add =  owner.getAddress();
-      expect( Nftmarket.listNFT(tokenId, 1)).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, add, "", 1);
+      expect( Nftmarket.listNFT(tokenId, 1)).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, add, Nftmarket.address, "", 1);
      const cancelListing =  Nftmarket.cancelListing(tokenId);
-     expect(cancelListing).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, add, "", 0);
+     expect(cancelListing).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId,Nftmarket.address, add, "", 0);
      const buyWillRevert = Nftmarket.buyNFT(tokenId);
      expect(buyWillRevert).to.be.revertedWith("This nft is not for sale");
     });
@@ -78,7 +78,7 @@ describe("NFTMarket",() => {
      const add =  owner.getAddress();
      const listNft =  Nftmarket.listNFT(tokenId, 2)
      const buyWillSucceed = Nftmarket.buyNFT(tokenId, {value: ethers.utils.parseEther("2")});
-     expect(buyWillSucceed).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId, owner.address, "", 0);
+     expect(buyWillSucceed).to.emit(Nftmarket, "NftTransfer").withArgs(tokenId,Nftmarket.address, owner.address, "", 0);
     });
   })
 })
